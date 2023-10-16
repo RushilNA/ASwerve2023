@@ -72,10 +72,10 @@ public class SwerveModule {
     
     m_turningEncoder = new CANCoder(TurningEncoderChannel);
 
-    SmartDashboard.putNumber("Encoder", m_turningEncoder.getPosition());
+    SmartDashboard.putNumber("Encoder", m_turningEncoder.getAbsolutePosition() - 125.068359375);
 
     m_driveMotor.setInverted(true);
-    m_turningMotor.setInverted(true);
+    m_turningMotor.setInverted(false);
 
     // Set the distance per pulse for the drive encoder. We can simply use the
     // distance traveled for one rotation of the wheel divided by the encoder
@@ -103,11 +103,11 @@ public class SwerveModule {
    */
   public SwerveModuleState getState() {
     return new SwerveModuleState(
-        m_driveEncoder.getVelocity(), new Rotation2d(m_turningEncoder.getPosition() * 2 * Math.PI / kEncoderResolution));
+        m_driveEncoder.getVelocity(), new Rotation2d(m_turningEncoder.getAbsolutePosition() ));
   }
   public void dashboardValues() {
     SmartDashboard.putNumber("Drive Encoder Velocity", m_driveEncoder.getVelocity());
-    SmartDashboard.putNumber("Turning Encoder Position", m_turningEncoder.getPosition());
+    SmartDashboard.putNumber("Turning Encoder Position", m_turningEncoder.getAbsolutePosition()-125.068359375);
 }
 
 
@@ -118,7 +118,7 @@ public class SwerveModule {
    */
   public SwerveModulePosition getPosition() {
     return new SwerveModulePosition(
-        m_driveEncoder.getPosition(), new Rotation2d(m_turningEncoder.getPosition()*2 * Math.PI / kEncoderResolution));
+        m_driveEncoder.getPosition(), new Rotation2d(m_turningEncoder.getAbsolutePosition()-125.068359375));
   }
 
   /**
@@ -129,7 +129,7 @@ public class SwerveModule {
   public void setDesiredState(SwerveModuleState desiredState) {
     // Optimize the reference state to avoid spinning further than 90 degrees
     SwerveModuleState state =
-        SwerveModuleState.optimize(desiredState, new Rotation2d(m_turningEncoder.getPosition() * 2 * Math.PI / kEncoderResolution));
+        SwerveModuleState.optimize(desiredState, new Rotation2d(m_turningEncoder.getAbsolutePosition()-125.068359375));
 
     // Calculate the drive output from the drive PID controller.
     final double driveOutput =
@@ -139,7 +139,7 @@ public class SwerveModule {
 
     // Calculate the turning motor output from the turning PID controller.
     final double turnOutput =
-        m_turningPIDController.calculate(m_turningEncoder.getPosition() * 2 * Math.PI / kEncoderResolution, state.angle.getRadians());
+        m_turningPIDController.calculate(m_turningEncoder.getAbsolutePosition() - 125.068359375 , state.angle.getRadians());
 
     
 
