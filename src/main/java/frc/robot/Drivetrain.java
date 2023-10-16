@@ -21,15 +21,14 @@ public class Drivetrain {
   public static final double kMaxAngularSpeed = Math.PI; // 1/2 rotation per second
 
   private final Translation2d m_frontLeftLocation = new Translation2d(0.381, 0.381);
-  private final Translation2d m_frontRightLocation = new Translation2d(0.381, -0.381);
+  private final Translation2d m_frontRightLocation = new Translation2d(0.381, -0.381  );
   private final Translation2d m_backLeftLocation = new Translation2d(-0.381, 0.381);
   private final Translation2d m_backRightLocation = new Translation2d(-0.381, -0.381);
 
-  private final SwerveModule m_frontLeft = new SwerveModule(2, 1, 2);
-  private final SwerveModule m_frontRight = new SwerveModule(6, 5, 4);
-  private final SwerveModule m_backLeft = new SwerveModule(4, 3, 1);
-  private final SwerveModule m_backRight = new SwerveModule(8, 10, 3);
-
+  private final SwerveModule m_frontLeft = new SwerveModule(2, 1, 2,1);
+  private final SwerveModule m_frontRight = new SwerveModule(6, 5, 4,2);
+  private final SwerveModule m_backLeft = new SwerveModule(4, 3, 1,3);
+  private final SwerveModule m_backRight = new SwerveModule(8, 10, 3,4);
   private final AHRS m_gyro = new AHRS();
 
   // private final AnalogGyro m_gyro = new AnalogGyro(0);
@@ -55,7 +54,7 @@ public class Drivetrain {
   }
   public void dashboardValues() {
     // You can add other values as needed
-    SmartDashboard.putNumber("Gyro Angle", m_gyro.getRotation2d().getDegrees());
+    SmartDashboard.putNumber("Encoder", m_backRight.getAngle());
 }
 
 
@@ -78,6 +77,7 @@ public class Drivetrain {
     m_frontRight.setDesiredState(swerveModuleStates[1]);
     m_backLeft.setDesiredState(swerveModuleStates[2]);
     m_backRight.setDesiredState(swerveModuleStates[3]);
+    dashboardValues();
   }
 
   public SwerveModule getFrontLeft() {
