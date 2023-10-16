@@ -64,7 +64,7 @@ public class SwerveModule {
   public SwerveModule(
       int driveMotorChannel,
       int turningMotorChannel,
-      int TurningEncoderChannel) {
+      int TurningEncoderChannel, int moduleNumber) {
        
     m_driveMotor = new CANSparkMax(driveMotorChannel, MotorType.kBrushless);
     m_turningMotor = new CANSparkMax(turningMotorChannel, MotorType.kBrushless);
@@ -77,6 +77,10 @@ public class SwerveModule {
 
     m_driveMotor.setInverted(true);
     m_turningMotor.setInverted(false);
+    if(moduleNumber == 1){
+      SmartDashboard.putNumber("Encoder", getAngle());
+    }
+
 
     // Set the distance per pulse for the drive encoder. We can simply use the
     // distance traveled for one rotation of the wheel divided by the encoder
@@ -107,11 +111,10 @@ public class SwerveModule {
         m_driveEncoder.getVelocity(), new Rotation2d(getAngle() ));
   }
   public double getAngle(){
-    return MathUtil.angleModulus(Units.degreesToRadians(m_turningEncoder.getAbsolutePosition())-2.1828833);
+    return MathUtil.angleModulus(Units.degreesToRadians(m_turningEncoder.getAbsolutePosition())-1.736466251882);
   }
   public void dashboardValues() {
-    SmartDashboard.putNumber("Drive Encoder Velocity", m_driveEncoder.getVelocity());
-    SmartDashboard.putNumber("Turning Encoder Position", getAngle());
+    SmartDashboard.putNumber("Encoder", getAngle());
 }
 
 
