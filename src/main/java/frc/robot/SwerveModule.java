@@ -4,67 +4,154 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
+import edu.wpi.first.wpilibj.motorcontrol.MotorController;
+import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.math.MathUtil;
+
+
+import javax.print.CancelablePrintJob;
+
 import com.ctre.phoenix.sensors.CANCoder;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.EncoderType;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.math.util.Units;
+import com.revrobotics.RelativeEncoder;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 
-import frc.robot.Drivetrain;
 
-public class Robot extends TimedRobot {
-  private final XboxController m_controller = new XboxController(0);
-  private final Drivetrain m_swerve = new Drivetrain();
+public class SwerveModule {
+  private static final double kWheelRadius = 0.0508;
+  private static final int kEncoderResolution = 4096;
 
-  // Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
-  private final SlewRateLimiter m_xspeedLimiter = new SlewRateLimiter(3);
-  private final SlewRateLimiter m_yspeedLimiter = new SlewRateLimiter(3);
-  private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(3);
-  
+  private static final double kModuleMaxAngularVelocity = Drivetrain.kMaxAngularSpeed;
+  private static final double kModuleMaxAngularAcceleration =
+      2 * Math.PI; // radians per second squared
 
-  @Override
-  public void autonomousPeriodic() {
-    driveWithJoystick(false);
-    m_swerve.updateOdometry();
-    m_swerve.dashboardValues(); 
+  private final CANSparkMax m_driveMotor;
+  private final CANSparkMax m_turningMotor;
+
+  private final RelativeEncoder m_driveEncoder;
+  private final CANCoder m_turningEncoder;
+
+  // Gains are for example purposes only - must be determined for your own robot!
+  private final PIDController m_drivePIDController = new PIDController(0.01, 0, 0);
+
+  // Gains are for example purposes only - must be determined for your own robot!
+  private final ProfiledPIDController m_turningPIDController =
+      new ProfiledPIDController(
+          0.5,
+          0,
+          0,
+          new TrapezoidProfile.Constraints(
+              kModuleMaxAngularVelocity, kModuleMaxAngularAcceleration));
+
+  // Gains are for example purposes only - must be determined for your own robot!
+  private final SimpleMotorFeedforward m_driveFeedforward = new SimpleMotorFeedforward(0.667, 2.44);
+  private final SimpleMotorFeedforward m_turnFeedforward = new SimpleMotorFeedforward(0, 0);
+
+  public SwerveModule(
+      int driveMotorChannel,
+      int turningMotorChannel,
+      int TurningEncoderChannel) {
+       
+    m_driveMotor = new CANSparkMax(driveMotorChannel, MotorType.kBrushless);
+    m_turningMotor = new CANSparkMax(turningMotorChannel, MotorType.kBrushless);
+
+    m_driveEncoder = m_driveMotor.getEncoder();
+    
+    m_turningEncoder = new CANCoder(TurningEncoderChannel);
+
+    SmartDashboard.putNumber("Encoder", getAngle());
+
+    m_driveMotor.setInverted(true);
+    m_turningMotor.setInverted(false);
+
+    // Set the distance per pulse for the drive encoder. We can simply use the
+    // distance traveled for one rotation of the wheel divided by the encoder
+    // resolution.
+    m_driveEncoder.setPositionConversionFactor(2 * Math.PI * kWheelRadius / kEncoderResolution);
+    
+    // Set the distance (in this case, angle) in radians per pulse for the turning encoder.
+    // This is the the angle through an entire rotation (2 * pi) divided by the
+    // encoder resolution.
+    //m_turningEncoder.setPositionConversionFactor(2 * Math.PI / kEncoderResolution);
+
+    // Limit the PID Controller's input range between -pi and pi and set the input
+    // to be continuous.
+    m_turningPIDController.enableContinuousInput(-Math.PI, Math.PI);
   }
 
-  @Override
-  public void teleopPeriodic() {
-    driveWithJoystick(false);
-    m_swerve.dashboardValues();
-   
+  // public void dashboardValues(){
+  //   SmartDashboard.putNumber("Encoder", m_turningEncoder.getPosition());
+  // }
+
+  /**
+   * Returns the current state of the module.
+   *
+   * @return The current state of the module.
+   */
+  public SwerveModuleState getState() {
+    return new SwerveModuleState(
+        m_driveEncoder.getVelocity(), new Rotation2d(getAngle() ));
+  }
+  public double getAngle(){
+    return MathUtil.angleModulus(Units.degreesToRadians(m_turningEncoder.getAbsolutePosition())-2.1828833);
+  }
+  public void dashboardValues() {
+    SmartDashboard.putNumber("Drive Encoder Velocity", m_driveEncoder.getVelocity());
+    SmartDashboard.putNumber("Turning Encoder Position", getAngle());
+}
+
+
+  /**
+   * Returns the current position of the module.
+   *
+   * @return The current position of the module.
+   */
+  public SwerveModulePosition getPosition() {
+    return new SwerveModulePosition(
+        m_driveEncoder.getPosition(), new Rotation2d(getAngle()));
   }
 
-  private void driveWithJoystick(boolean fieldRelative) {
-    // Get the x speed. We are inverting this because Xbox controllers return
-    // negative values when we push forward.
-    final var xSpeed =
-        -m_xspeedLimiter.calculate(MathUtil.applyDeadband(m_controller.getLeftY(), 0.15))
-            * Drivetrain.kMaxSpeed;
+  /**
+   * Sets the desired state for the module.
+   *
+   * @param desiredState Desired state with speed and angle.
+   */
+  public void setDesiredState(SwerveModuleState desiredState) {
+    // Optimize the reference state to avoid spinning further than 90 degrees
+    SwerveModuleState state =
+        SwerveModuleState.optimize(desiredState, new Rotation2d(getAngle()));
 
-    // Get the y speed or sideways/strafe speed. We are inverting this because
-    // we want a positive value when we pull to the left. Xbox controllers
-    // return positive values when you pull to the right by default.
-    final var ySpeed =
-        -m_yspeedLimiter.calculate(MathUtil.applyDeadband(m_controller.getLeftX(), 0.15))
-            * Drivetrain.kMaxSpeed;
+    // Calculate the drive output from the drive PID controller.
+    final double driveOutput =
+        m_drivePIDController.calculate(m_driveEncoder.getVelocity(), state.speedMetersPerSecond);
 
-    // Get the rate of angular rotation. We are inverting this because we want a
-    // positive value when we pull to the left (remember, CCW is positive in
-    // mathematics). Xbox controllers return positive values when you pull to
-    // the right by default.
+    final double driveFeedforward = m_driveFeedforward.calculate(state.speedMetersPerSecond);
+
+    // Calculate the turning motor output from the turning PID controller.
+    final double turnOutput =
+        m_turningPIDController.calculate(getAngle() , state.angle.getRadians());
 
     
-    final var rot =
-        -m_rotLimiter.calculate(MathUtil.applyDeadband(m_controller.getRightX(), 0.15))
-            * Drivetrain.kMaxAngularSpeed;
 
-    m_swerve.drive(xSpeed, ySpeed, rot, fieldRelative);
+    final double turnFeedforward =
+        m_turnFeedforward.calculate(m_turningPIDController.getSetpoint().velocity);
+
+    
+    m_driveMotor.setVoltage(driveOutput + driveFeedforward);
+    m_turningMotor.setVoltage(turnOutput + turnFeedforward);
   }
 }
