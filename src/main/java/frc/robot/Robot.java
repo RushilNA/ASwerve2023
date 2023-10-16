@@ -36,11 +36,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    driveWithJoystick(true);
+    driveWithJoystick(false);
     m_swerve.dashboardValues();
-    double turningEncoderPosition = SmartDashboard.getNumber("Turning Encoder Position", 0.0);
-    System.out.println("Turning Encoder Position: " + turningEncoderPosition);
-    
+   
   }
 
   private void driveWithJoystick(boolean fieldRelative) {
