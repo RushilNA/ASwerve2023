@@ -89,7 +89,7 @@ public class SwerveModule {
 
     // Limit the PID Controller's input range between -pi and pi and set the input
     // to be continuous.
-    m_turningPIDController.enableContinuousInput(-Math.PI, Math.PI);
+    m_turningPIDController.enableContinuousInput(0,2*Math.PI);
   }
 
   // public void dashboardValues(){
@@ -106,7 +106,7 @@ public class SwerveModule {
         m_driveEncoder.getVelocity(), new Rotation2d(getAngle() ));
   }
   public double getAngle(){
-    return Units.degreesToRadians(m_turningEncoder.getAbsolutePosition()-2.1828833);
+    return Units.degreesToRadians(m_turningEncoder.getAbsolutePosition())-2.1828833;
   }
   public void dashboardValues() {
     SmartDashboard.putNumber("Drive Encoder Velocity", m_driveEncoder.getVelocity());
