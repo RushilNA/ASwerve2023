@@ -73,13 +73,13 @@ public class SwerveModule {
     
     m_turningEncoder = new CANCoder(TurningEncoderChannel);
 
-    SmartDashboard.putNumber("Encoder", getAngle());
+    // SmartDashboard.putNumber("Encoder", getAngle());
 
     m_driveMotor.setInverted(true);
     m_turningMotor.setInverted(false);
-    if(moduleNumber == 1){
-      SmartDashboard.putNumber("Encoder", getAngle());
-    }
+    // if(moduleNumber == 1){
+    //   SmartDashboard.putNumber("Encoder", getAngle());
+    // }
 
 
     // Set the distance per pulse for the drive encoder. We can simply use the
@@ -113,9 +113,9 @@ public class SwerveModule {
   public double getAngle(){
     return MathUtil.angleModulus(Units.degreesToRadians(m_turningEncoder.getAbsolutePosition())-1.736466251882);
   }
-  public void dashboardValues() {
-    SmartDashboard.putNumber("Encoder", getAngle());
-}
+//   public void dashboardValues() {
+//     SmartDashboard.putNumber("Encoder", getAngle());
+// }
 
 
   /**
