@@ -29,9 +29,13 @@
     @Override
     public void autonomousPeriodic() {
       driveWithJoystick(false);
-      m_swerve.updateOdometry();
-      m_swerve.dashboardValues(); 
     }
+
+    // @Override
+    // public void periodic(){
+    //   m_swerve.updateOdometry();
+    //   m_swerve.dashboardValues(); 
+    // }
 
     @Override
     public void teleopPeriodic() {
