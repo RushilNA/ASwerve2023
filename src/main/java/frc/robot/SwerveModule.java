@@ -23,17 +23,19 @@ import javax.print.CancelablePrintJob;
 
 import com.ctre.phoenix.sensors.CANCoder;
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.EncoderType;
 
 import edu.wpi.first.math.util.Units;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 
-
 public class SwerveModule {
   private static final double kWheelRadius = 0.0508;
   private static final int kEncoderResolution = 4096;
+  private static double offsetValue = 0;
+  private static double pValue = 0;
+
+
 
   private static final double kModuleMaxAngularVelocity = Drivetrain.kMaxAngularSpeed;
   private static final double kModuleMaxAngularAcceleration =
@@ -49,25 +51,20 @@ public class SwerveModule {
   private final PIDController m_drivePIDController = new PIDController(0.01, 0, 0);
 
   // Gains are for example purposes only - must be determined for your own robot!
-  private final ProfiledPIDController m_turningPIDController =
-      new ProfiledPIDController(
-          0.5,
-          0,
-          0,
-          new TrapezoidProfile.Constraints(
-              kModuleMaxAngularVelocity, kModuleMaxAngularAcceleration));
 
   // Gains are for example purposes only - must be determined for your own robot!
   private final SimpleMotorFeedforward m_driveFeedforward = new SimpleMotorFeedforward(0.667, 2.44);
-  private final SimpleMotorFeedforward m_turnFeedforward = new SimpleMotorFeedforward(0, 0);
+  private final SimpleMotorFeedforward m_turnFeedforward = new SimpleMotorFeedforward(0, 0.2);
 
   public SwerveModule(
       int driveMotorChannel,
       int turningMotorChannel,
-      int TurningEncoderChannel, int moduleNumber) {
+      int TurningEncoderChannel, int moduleNumber, double offsetValue1) {
        
     m_driveMotor = new CANSparkMax(driveMotorChannel, MotorType.kBrushless);
     m_turningMotor = new CANSparkMax(turningMotorChannel, MotorType.kBrushless);
+
+
 
     m_driveEncoder = m_driveMotor.getEncoder();
     
@@ -77,9 +74,25 @@ public class SwerveModule {
 
     m_driveMotor.setInverted(true);
     m_turningMotor.setInverted(false);
-    // if(moduleNumber == 1){
-    //   SmartDashboard.putNumber("Encoder", getAngle());
-    // }
+
+    if(moduleNumber == 0){
+      pValue = 0.01;
+      offsetValue = -0.009075712;
+    }
+    else if(moduleNumber == 1){
+      pValue = 0.01;
+      offsetValue = 0;
+    }
+    else if(moduleNumber == 2){
+      pValue = 0.01;
+      offsetValue = 0;
+
+    }
+    else if(moduleNumber == 3){
+      pValue = 0.02;
+      offsetValue = 0;
+
+    }
 
 
     // Set the distance per pulse for the drive encoder. We can simply use the
@@ -97,6 +110,19 @@ public class SwerveModule {
     m_turningPIDController.enableContinuousInput(-Math.PI, Math.PI);
   }
 
+  private final ProfiledPIDController m_turningPIDController =
+  new ProfiledPIDController(
+    pValue,
+      0,
+      0,
+      new TrapezoidProfile.Constraints(
+          kModuleMaxAngularVelocity, kModuleMaxAngularAcceleration));
+
+
+  public double getOffsetValue(){
+    return offsetValue;
+  }
+
   // public void dashboardValues(){
   //   SmartDashboard.putNumber("Encoder", m_turningEncoder.getPosition());
   // }
@@ -111,7 +137,7 @@ public class SwerveModule {
         m_driveEncoder.getVelocity(), new Rotation2d(getAngle() ));
   }
   public double getAngle(){
-    return MathUtil.angleModulus(Units.degreesToRadians(m_turningEncoder.getAbsolutePosition())-1.736466251882);
+    return MathUtil.angleModulus(Units.degreesToRadians(m_turningEncoder.getAbsolutePosition()-offsetValue));
   }
 //   public void dashboardValues() {
 //     SmartDashboard.putNumber("Encoder", getAngle());
